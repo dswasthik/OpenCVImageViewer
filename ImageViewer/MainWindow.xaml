@@ -1,0 +1,265 @@
+﻿<Window x:Class="ImageProcessingApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OpenCV Image Processor" Height="750" Width="1100"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F0F0F">
+
+    <Window.Resources>
+        <!-- Button Style -->
+        <Style x:Key="OpButton" TargetType="Button">
+            <Setter Property="Background" Value="#1A1A2E"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+            <Setter Property="BorderBrush" Value="#00D4FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#00D4FF"/>
+                                <Setter Property="Foreground" Value="#0F0F0F"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0099BB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Section Header Style -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#00D4FF"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="4,10,4,4"/>
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <!-- Header -->
+            <RowDefinition Height="*"/>
+            <!-- Main content -->
+            <RowDefinition Height="35"/>
+            <!-- Status bar -->
+        </Grid.RowDefinitions>
+
+        <!-- ═══ HEADER ═══ -->
+        <Border Grid.Row="0" Background="#0A0A1A"
+                BorderBrush="#00D4FF" BorderThickness="0,0,0,1">
+            <Grid>
+                <TextBlock Text="⬡  OPENCV IMAGE PROCESSOR"
+                           Foreground="#00D4FF"
+                           FontFamily="Consolas" FontSize="16" FontWeight="Bold"
+                           VerticalAlignment="Center" Margin="20,0"/>
+                <TextBlock Text="C# · WPF · OpenCvSharp"
+                           Foreground="#555" FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                           Margin="0,0,20,0"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <!-- Left panel -->
+                <ColumnDefinition Width="*"/>
+                <!-- Image area -->
+                <ColumnDefinition Width="210"/>
+                <!-- Right panel -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ── LEFT PANEL: File & Basic Ops ── -->
+            <Border Grid.Column="0" Background="#0A0A1A"
+                    BorderBrush="#1E1E3A" BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+
+                        <!-- File Operations -->
+                        <TextBlock Text="▸ FILE" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="📂  Open Image" Style="{StaticResource OpButton}"
+                                Click="OpenImage_Click"/>
+                        <Button Content="💾  Save Image" Style="{StaticResource OpButton}"
+                                Click="SaveImage_Click" x:Name="BtnSave" IsEnabled="False"/>
+                        <Button Content="↺  Reset Original" Style="{StaticResource OpButton}"
+                                Click="Reset_Click" x:Name="BtnReset" IsEnabled="False"/>
+
+                        <!-- Color Spaces -->
+                        <TextBlock Text="▸ COLOR SPACE" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="⬛  Grayscale" Style="{StaticResource OpButton}"
+                                Click="Grayscale_Click" x:Name="BtnGray" IsEnabled="False"/>
+                        <Button Content="🌈  HSV" Style="{StaticResource OpButton}"
+                                Click="HSV_Click" x:Name="BtnHSV" IsEnabled="False"/>
+                        <Button Content="🔵  BGR → RGB" Style="{StaticResource OpButton}"
+                                Click="BGR2RGB_Click" x:Name="BtnRGB" IsEnabled="False"/>
+
+                        <!-- Flip -->
+                        <TextBlock Text="▸ FLIP" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="↔  Horizontal" Style="{StaticResource OpButton}"
+                                Click="FlipH_Click" x:Name="BtnFlipH" IsEnabled="False"/>
+                        <Button Content="↕  Vertical" Style="{StaticResource OpButton}"
+                                Click="FlipV_Click" x:Name="BtnFlipV" IsEnabled="False"/>
+                        <Button Content="⤢  Both" Style="{StaticResource OpButton}"
+                                Click="FlipBoth_Click" x:Name="BtnFlipB" IsEnabled="False"/>
+
+                        <!-- Image Info -->
+                        <TextBlock Text="▸ IMAGE INFO" Style="{StaticResource SectionHeader}"/>
+                        <Border Background="#111122" CornerRadius="4" Padding="10" Margin="4">
+                            <StackPanel>
+                                <TextBlock x:Name="TxtWidth"  Text="Width  : —"
+                                           Foreground="#888" FontFamily="Consolas" FontSize="11"/>
+                                <TextBlock x:Name="TxtHeight" Text="Height : —"
+                                           Foreground="#888" FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="TxtChannels" Text="Channels: —"
+                                           Foreground="#888" FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="TxtColorSpace" Text="Space  : —"
+                                           Foreground="#00D4FF" FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ── CENTER: Image Display ── -->
+            <Grid Grid.Column="1" Background="#0F0F0F">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Empty state -->
+                <StackPanel x:Name="EmptyState" VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <TextBlock Text="⬡" Foreground="#1A1A3A" FontSize="80"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Open an image to begin" Foreground="#333"
+                               FontFamily="Consolas" FontSize="14"
+                               HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                </StackPanel>
+
+                <!-- Image display -->
+                <Border x:Name="ImageBorder" Visibility="Collapsed"
+                        Margin="20" CornerRadius="6"
+                        BorderBrush="#1E1E3A" BorderThickness="1">
+                    <Image x:Name="ImgDisplay"
+                           Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Border>
+
+                <!-- Resize controls -->
+                <Border Grid.Row="1" Background="#0A0A1A"
+                        BorderBrush="#1E1E3A" BorderThickness="0,1,0,0"
+                        Padding="15,10" x:Name="ResizeBar" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="RESIZE %" Foreground="#555"
+                                   FontFamily="Consolas" FontSize="11"
+                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Slider x:Name="SliderScale" Minimum="10" Maximum="200" Value="100"
+                                Width="200" VerticalAlignment="Center"
+                                ValueChanged="SliderScale_ValueChanged"
+                                Foreground="#00D4FF"/>
+                        <TextBlock x:Name="TxtScale" Text="100%"
+                                   Foreground="#00D4FF" FontFamily="Consolas" FontSize="12"
+                                   VerticalAlignment="Center" Margin="10,0"/>
+                        <Button Content="Apply Resize" Style="{StaticResource OpButton}"
+                                Click="ApplyResize_Click" x:Name="BtnApplyResize"
+                                IsEnabled="False"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ── RIGHT PANEL: Filters & Drawing ── -->
+            <Border Grid.Column="2" Background="#0A0A1A"
+                    BorderBrush="#1E1E3A" BorderThickness="1,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+
+                        <!-- Filters -->
+                        <TextBlock Text="▸ FILTERS" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="〰  Gaussian Blur" Style="{StaticResource OpButton}"
+                                Click="GaussianBlur_Click" x:Name="BtnBlur" IsEnabled="False"/>
+                        <Button Content="⬡  Edge Detect (Canny)" Style="{StaticResource OpButton}"
+                                Click="Canny_Click" x:Name="BtnCanny" IsEnabled="False"/>
+                        <Button Content="▩  Threshold" Style="{StaticResource OpButton}"
+                                Click="Threshold_Click" x:Name="BtnThreshold" IsEnabled="False"/>
+                        <Button Content="✦  Sharpen" Style="{StaticResource OpButton}"
+                                Click="Sharpen_Click" x:Name="BtnSharpen" IsEnabled="False"/>
+
+                        <!-- Blur strength -->
+                        <TextBlock Text="Blur Kernel Size" Foreground="#555"
+                                   FontFamily="Consolas" FontSize="10" Margin="4,6,4,2"/>
+                        <Slider x:Name="SliderBlur" Minimum="1" Maximum="15" Value="5"
+                                IsSnapToTickEnabled="True" TickFrequency="2"
+                                Foreground="#00D4FF" Margin="4,0"/>
+                        <TextBlock x:Name="TxtBlurVal" Text="Kernel: 5"
+                                   Foreground="#555" FontFamily="Consolas" FontSize="10"
+                                   Margin="4,2,4,0"/>
+
+                        <!-- Drawing -->
+                        <TextBlock Text="▸ DRAW ON IMAGE" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="⬜  Draw Rectangle" Style="{StaticResource OpButton}"
+                                Click="DrawRect_Click" x:Name="BtnDrawRect" IsEnabled="False"/>
+                        <Button Content="⬤  Draw Circle" Style="{StaticResource OpButton}"
+                                Click="DrawCircle_Click" x:Name="BtnDrawCircle" IsEnabled="False"/>
+                        <Button Content="🏷  Add Text" Style="{StaticResource OpButton}"
+                                Click="DrawText_Click" x:Name="BtnDrawText" IsEnabled="False"/>
+
+                        <!-- Resize -->
+                        <TextBlock Text="▸ TRANSFORM" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="⤡  Resize (slider)" Style="{StaticResource OpButton}"
+                                Click="ShowResize_Click" x:Name="BtnResize" IsEnabled="False"/>
+                        <Button Content="✂  Crop Center 50%" Style="{StaticResource OpButton}"
+                                Click="CropCenter_Click" x:Name="BtnCrop" IsEnabled="False"/>
+
+                        <!-- Histogram -->
+                        <TextBlock Text="▸ ANALYSIS" Style="{StaticResource SectionHeader}"/>
+                        <Button Content="📊  Equalize Histogram" Style="{StaticResource OpButton}"
+                                Click="EqualizeHist_Click" x:Name="BtnHist" IsEnabled="False"/>
+                        <Button Content="🔍  Pixel Info (center)" Style="{StaticResource OpButton}"
+                                Click="PixelInfo_Click" x:Name="BtnPixel" IsEnabled="False"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ═══ STATUS BAR ═══ -->
+        <Border Grid.Row="2" Background="#0A0A1A"
+                BorderBrush="#00D4FF" BorderThickness="0,1,0,0">
+            <Grid>
+                <TextBlock x:Name="TxtStatus"
+                           Text="Ready — open an image to start"
+                           Foreground="#555" FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" Margin="15,0"/>
+                <TextBlock x:Name="TxtOp"
+                           Text="No operation applied"
+                           Foreground="#00D4FF" FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                           Margin="0,0,15,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
