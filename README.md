@@ -164,155 +164,57 @@ private static Mat EnsureBGR(Mat src)
     return bgr;
 }
 ```
+---
+
 ## 🏗️ Architecture
-┌─────────────────────────────────────────────────────────────┐
-│                        MainWindow.xaml                       │
-│                     (UI Layout — XAML)                       │
-│                                                             │
-│  ┌─────────────┐   ┌──────────────────┐   ┌─────────────┐  │
-│  │  Left Panel  │   │   Centre Panel   │   │ Right Panel │  │
-│  │─────────────│   │──────────────────│   │─────────────│  │
-│  │ FILE         │   │                  │   │ FILTERS     │  │
-│  │ COLOR SPACE  │   │   Image Display  │   │ DRAW        │  │
-│  │ FLIP         │   │   (WPF Image)    │   │ TRANSFORM   │  │
-│  │ IMAGE INFO   │   │                  │   │ ANALYSIS    │  │
-│  └─────────────┘   │   Resize Slider  │   └─────────────┘  │
-│                     └──────────────────┘                    │
-│                          Status Bar                          │
-└─────────────────────────────────────────────────────────────┘
-│
-│ button click → Apply()
-▼
-┌─────────────────────────────────────────────────────────────┐
-│                     MainWindow.xaml.cs                       │
-│                    (UI Logic — C#)                           │
-│                                                             │
-│   _original ──── never modified, always the source          │
-│   _current  ──── what is displayed right now                │
-│   _previous ──── last state before operation (undo)         │
-│   _lastOp   ──── tracks which button is active (toggle)     │
-│                                                             │
-│   Apply(Func<Mat> operation, string opName)                 │
-│   ┌─────────────────────────────────────────────┐           │
-│   │ same button again?  →  restore _previous    │           │
-│   │ new operation?      →  save _current        │           │
-│   │                        call operation()     │           │
-│   │                        display result       │           │
-│   └─────────────────────────────────────────────┘           │
-└─────────────────────────────────────────────────────────────┘
-│
-│ Func<Mat> passed in
-▼
-┌─────────────────────────────────────────────────────────────┐
-│                      ImageProcessor.cs                       │
-│              (Pure OpenCV Logic — no UI here)                │
-│                                                             │
-│  Input: Mat  ──────────────────────────────►  Output: Mat   │
-│                                                             │
-│  ToGrayscale()     CvtColor(BGR2GRAY)                       │
-│  ToHSV()           CvtColor(BGR2HSV)                        │
-│  BGRtoRGB()        CvtColor(BGR2RGB)                        │
-│  Flip()            Cv2.Flip(FlipMode)                       │
-│  GaussianBlur()    Cv2.GaussianBlur(kernel size)            │
-│  CannyEdges()      Cv2.Canny(threshold1, threshold2)        │
-│  Threshold()       Cv2.Threshold(127, 255, Binary)          │
-│  Sharpen()         Cv2.Filter2D(3×3 kernel)                 │
-│  Resize()          Cv2.Resize(scale %)                      │
-│  CropCenter()      Mat(src, OcvRect)                        │
-│  DrawRectangle()   Cv2.Rectangle()                          │
-│  DrawCircle()      Cv2.Circle()                             │
-│  DrawText()        Cv2.PutText()                            │
-│  EqualizeHist()    Cv2.EqualizeHist()                       │
-│  GetPixelInfo()    Mat.At<Vec3b>()                          │
-│                                                             │
-│  EnsureBGR()  ←── private guard on all colour operations    │
-└─────────────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────────────┐
-│                        OpenCvSharp4                          │
-│                  (C# wrapper around OpenCV)                  │
-│                                                             │
-│   Mat class         ── image matrix (rows × cols × channels)│
-│   Cv2 static class  ── all operations                       │
-│   Vec3b             ── 3-channel pixel (B, G, R)            │
-│   BitmapSourceConverter ── Mat → WPF BitmapSource           │
-└─────────────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────────────┐
-│                     OpenCV C++ Core                          │
-│              (native DLL — OpenCvSharpExtern.dll)            │
-│                                                             │
-│   All actual pixel math runs here at native speed           │
-│   Python cv2 and C++ cv2 call this same core                │
-└─────────────────────────────────────────────────────────────┘
 
-### Data flow for a single operation
-User clicks "Grayscale"
-│
-▼
-Grayscale_Click()  [MainWindow.xaml.cs]
-│
-▼
-Apply(() => ImageProcessor.ToGrayscale(_current!), "Grayscale", "GRAY")
-│
-├── _lastOp == "Grayscale"?  →  restore _previous (undo)
-│
-└── new op →  _previous = _current.Clone()
-_lastOp   = "Grayscale"
-│
-▼
-ImageProcessor.ToGrayscale(src)
-│
-├── src.Channels() == 1?  →  return src.Clone()
-│
-└── Cv2.CvtColor(src, dst, BGR2GRAY)
-│
-▼
-Mat returned (1 channel)
-│
-▼
-BitmapSourceConverter.ToBitmapSource(mat)
-│
-▼
-ImgDisplay.Source = bitmap
-TxtColorSpace.Text = "GRAY"
-TxtChannels.Text   = "1"
-
-### State machine — _current at each stage
-App opens
-│
-▼
-_original = null
-_current  = null          [all buttons disabled]
-│
-│  Open Image
-▼
-_original = Mat (BGR)
-_current  = _original.Clone()
-_previous = null
-_lastOp   = ""            [all buttons enabled]
-│
-│  Click Grayscale
-▼
-_previous = _current.Clone()  (BGR saved)
-_current  = gray Mat
-_lastOp   = "Grayscale"
-│
-│  Click Grayscale again
-▼
-_current  = _previous.Clone() (BGR restored)
-_previous = null
-_lastOp   = ""
-│
-│  Click Reset
-▼
-_current  = _original.Clone() (always safe)
-_previous = null
-_lastOp   = ""
-
-
+```
+┌──────────────────────────────────────┐
+│           MainWindow.xaml            │
+│              (UI Layout)             │
+├──────────────┬───────────────────────┤
+│  Left Panel  │     Centre Panel      │  Right Panel
+│  File        │                       │  Filters
+│  Color Space │    Image Display      │  Draw
+│  Flip        │                       │  Transform
+│  Image Info  │    Resize Slider      │  Analysis
+└──────────────┴───────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────┐
+│         MainWindow.xaml.cs           │
+│            (UI Logic)                │
+│                                      │
+│  _original → never touched           │
+│  _current  → displayed image         │
+│  _previous → undo state              │
+│  _lastOp   → toggle tracker          │
+└──────────────────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────┐
+│          ImageProcessor.cs           │
+│        (All OpenCV Operations)       │
+│                                      │
+│  Mat in  ──────────────►  Mat out    │
+│                                      │
+│  Color Space  │  Filters             │
+│  Flip         │  Transform           │
+│  Drawing      │  Analysis            │
+└──────────────────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────┐
+│            OpenCvSharp4              │
+│       (C# wrapper over OpenCV)       │
+└──────────────────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────┐
+│          OpenCV C++ Core             │
+│      (native pixel math engine)      │
+└──────────────────────────────────────┘
+```
 ---
 
 ## 🗺️ Learning Roadmap
