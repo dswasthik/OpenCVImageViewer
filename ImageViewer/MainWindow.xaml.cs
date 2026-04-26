@@ -16,6 +16,9 @@ namespace ImageProcessingApp
         private Mat? _original;
         private Mat? _current;
         private string _colorSpaceLabel = "BGR";
+        private Mat? _previous;
+        private string _lastColorSpaceLabel = "BGR";
+        private string _lastOp = "";
 
         public MainWindow()
         {
@@ -43,6 +46,8 @@ namespace ImageProcessingApp
 
             _current = _original.Clone();
             _colorSpaceLabel = "BGR";
+            _previous = null; 
+            _lastOp = "";    
             DisplayMat(_current);
             UpdateInfo();
             SetControlsEnabled(true);
@@ -68,6 +73,8 @@ namespace ImageProcessingApp
             if (_original == null) return;
             _current = _original.Clone();
             _colorSpaceLabel = "BGR";
+            _previous = null;   
+            _lastOp = "";     
             DisplayMat(_current);
             UpdateInfo();
             SetStatus("Reset to original", "Original restored");
@@ -164,16 +171,35 @@ namespace ImageProcessingApp
         // ── Core Helpers ──────────────────────────────────────
 
         private void Apply(Func<Mat> operation, string opName,
-                           string? newColorSpace = null)
+                   string? newColorSpace = null)
         {
             if (_current == null) return;
             try
             {
+                // Same button clicked again → UNDO
+                if (_lastOp == opName && _previous != null)
+                {
+                    _current = _previous.Clone();
+                    _colorSpaceLabel = _lastColorSpaceLabel;
+                    _previous = null;
+                    _lastOp = "";
+                    DisplayMat(_current);
+                    UpdateInfo();
+                    SetStatus($"Removed: {opName}", $"↩ {opName} undone");
+                    return;
+                }
+
+                // Save current state before applying
+                _previous = _current.Clone();
+                _lastColorSpaceLabel = _colorSpaceLabel;
+                _lastOp = opName;
+
+                // Apply
                 _current = operation();
                 if (newColorSpace != null) _colorSpaceLabel = newColorSpace;
                 DisplayMat(_current);
                 UpdateInfo();
-                SetStatus($"Applied: {opName}", $"✓ {opName}");
+                SetStatus($"Applied: {opName} — click again to undo", $"✓ {opName}");
             }
             catch (Exception ex)
             {
