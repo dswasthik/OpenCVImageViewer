@@ -13,6 +13,10 @@ namespace ImageProcessingApp
 
         public static Mat ToGrayscale(Mat src)
         {
+            // Guard: already grayscale, just return a clone — nothing to do
+            if (src.Channels() == 1)
+                return src.Clone();
+
             var dst = new Mat();
             Cv2.CvtColor(src, dst, ColorConversionCodes.BGR2GRAY);
             return dst;
@@ -20,16 +24,20 @@ namespace ImageProcessingApp
 
         public static Mat ToHSV(Mat src)
         {
+            // Guard: if already grayscale, convert to BGR first
             var input = EnsureBGR(src);
             var dst = new Mat();
             Cv2.CvtColor(input, dst, ColorConversionCodes.BGR2HSV);
             return dst;
         }
 
+
         public static Mat BGRtoRGB(Mat src)
         {
+            // Guard: if already grayscale, convert to BGR first
+            var input = EnsureBGR(src);
             var dst = new Mat();
-            Cv2.CvtColor(src, dst, ColorConversionCodes.BGR2RGB);
+            Cv2.CvtColor(input, dst, ColorConversionCodes.BGR2RGB);
             return dst;
         }
 
@@ -70,7 +78,8 @@ namespace ImageProcessingApp
 
         public static Mat Sharpen(Mat src)
         {
-            // Build kernel cell by cell — avoids inaccessible array constructor
+            // Guard: sharpen needs BGR, not grayscale
+            var input = EnsureBGR(src);
             var kernel = new Mat(3, 3, MatType.CV_32F);
             kernel.Set<float>(0, 0, 0f);
             kernel.Set<float>(0, 1, -1f);
@@ -83,7 +92,7 @@ namespace ImageProcessingApp
             kernel.Set<float>(2, 2, 0f);
 
             var dst = new Mat();
-            Cv2.Filter2D(src, dst, -1, kernel);
+            Cv2.Filter2D(input, dst, -1, kernel);
             return dst;
         }
 
@@ -113,7 +122,8 @@ namespace ImageProcessingApp
 
         public static Mat DrawRectangle(Mat src)
         {
-            var dst = src.Clone();
+            // Guard: drawing needs a colour image
+            var dst = EnsureBGR(src).Clone();
             Cv2.Rectangle(dst,
                 new OcvPoint(30, 30),
                 new OcvPoint(dst.Width - 30, dst.Height - 30),
@@ -123,16 +133,17 @@ namespace ImageProcessingApp
 
         public static Mat DrawCircle(Mat src)
         {
-            var dst = src.Clone();
+            var dst = EnsureBGR(src).Clone();
             var center = new OcvPoint(dst.Width / 2, dst.Height / 2);
             int radius = System.Math.Min(dst.Width, dst.Height) / 4;
             Cv2.Circle(dst, center, radius, new Scalar(255, 80, 0), 3);
             return dst;
         }
 
+
         public static Mat DrawText(Mat src, string text = "OpenCvSharp WPF")
         {
-            var dst = src.Clone();
+            var dst = EnsureBGR(src).Clone();
             Cv2.PutText(dst, text,
                 new OcvPoint(20, 50),
                 HersheyFonts.HersheySimplex,
