@@ -7,10 +7,8 @@ A desktop image processing application built with **C#**, **WPF**, and **OpenCvS
 ---
 
 ## 📸 Screenshot
+<img width="1359" height="930" alt="image" src="https://github.com/user-attachments/assets/def9cbe1-f8d0-4316-9355-f4aceae1f1e5" />
 
-<!-- Add a screenshot of your app here after taking one -->
-<!-- Drag your screenshot into the GitHub repo and replace the line below -->
-![ImageViewer App Screenshot](docs/screenshot.png)
 
 ---
 
